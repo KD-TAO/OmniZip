@@ -45,20 +45,11 @@ pip install flash-attn --no-build-isolation
 You can adjust the number of input frames and the maximum pixel size according to your own computing resources.
 ```
 VIDEO_MIN_PIXELS = 128 * 28 * 28
-VIDEO_MAX_PIXELS = 768 * 28 * 28 <- 1
+VIDEO_MAX_PIXELS = 768 * 28 * 28 # <- 1 (We use 128*28*28 in the paper.)
 FRAME_FACTOR = 2
 FPS = 2.0
 FPS_MIN_FRAMES = 4
-FPS_MAX_FRAMES = 768 <- 2
-```
-In the paper, we use
-```
-VIDEO_MIN_PIXELS = 128 * 28 * 28
-VIDEO_MAX_PIXELS = 128 * 28 * 28
-FRAME_FACTOR = 2
-FPS = 2.0
-FPS_MIN_FRAMES = 4
-FPS_MAX_FRAMES = 768 # VideoMME:768 Others: 128
+FPS_MAX_FRAMES = 768 # <- 2
 ```
 
 ## Quick Start
@@ -85,7 +76,7 @@ OMNIZIP_CONTEXTUAL_RATIO=0.05
 ```bash
 bash eval.sh
 ```
-#### For Other Benchmark (WorldSense, AVUT, ShorVid-Bench)
+#### For Other Benchmark ([WorldSense](https://jaaackhongggg.github.io/WorldSense/), [AVUT](https://huggingface.co/datasets/tsinghua-ee/AVUTBenchmark), [ShorVid-Bench](https://huggingface.co/datasets/TencentARC/ShortVid-Bench))
 
 - We will sort out the code as soon as possible.
 
