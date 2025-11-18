@@ -1,7 +1,7 @@
 
 # OmniZip: Audio-Guided Dynamic Token Compression for Fast Omnimodal Large Language Models
 
-[Keda Tao](), [Kele Shao](), [Bohan Yu](), [Weiqiang Wang](), [Jian liu](), [Huan Wang](https://huanwang.tech/), "OmniZip: Audio-Guided Dynamic Token Compression for Fast Omnimodal Large Language Models"
+[Keda Tao](https://kd-tao.github.io/), [Kele Shao](https://cokeshao.github.io/), [Bohan Yu](), [Weiqiang Wang](), [Jian liu](), [Huan Wang](https://huanwang.tech/), "OmniZip: Audio-Guided Dynamic Token Compression for Fast Omnimodal Large Language Models"
 
 [[Paper]()]
 
@@ -15,8 +15,9 @@
 
 ## ⚒️ TODO
 
-* [ ] Release Paper 
 * [x] Release code 
+* [ ] Release paper 
+* [ ] Release evaluation script for all benchmark
 * [ ] Support more models
 
 ## Install
@@ -40,53 +41,54 @@ pip install -e .
 # pip install torch==2.6.0 torchvision==0.21.0
 pip install flash-attn --no-build-isolation
 ```
+#### Input Video Setting
+You can adjust the number of input frames and the maximum pixel size according to your own computing resources.
+```
+VIDEO_MIN_PIXELS = 128 * 28 * 28
+VIDEO_MAX_PIXELS = 768 * 28 * 28 <- 1
+FRAME_FACTOR = 2
+FPS = 2.0
+FPS_MIN_FRAMES = 4
+FPS_MAX_FRAMES = 768 <- 2
+```
+In the paper, we use
+```
+VIDEO_MIN_PIXELS = 128 * 28 * 28
+VIDEO_MAX_PIXELS = 128 * 28 * 28
+FRAME_FACTOR = 2
+FPS = 2.0
+FPS_MIN_FRAMES = 4
+FPS_MAX_FRAMES = 768 # VideoMME:768 Others: 128
+```
+
 ## Quick Start
-
-
-
-
+To have a quick demo of OmniZip with Qwen2.5-Omni, please run
+```
+python demo.py --omnizip
+```
+You can set the relevant parameters by
+```
+python demo.py --omnizip --rho_audio 0.4 --rho_video 0.7
+```
 ## Evaluation
-#### Set the DyCoke parameters
-- We use the [lmms-eval](https://github.com/EvolvingLMMs-Lab/lmms-eval) toolkit to evaluate our models. It's worth noting that you can specify DyCoke Settings via parameters, such as:
+#### For VideoMME (Benchmarks in lmms-eval)
+- We use the [lmms-eval](https://github.com/EvolvingLMMs-Lab/lmms-eval) toolkit to evaluate our models. It's worth noting that you can specify OmniZip Settings via parameters in **eval.sh**, such as:
 ```bash
-...
---model_args pretrained=lmms-lab/llava-onevision-qwen2-7b-ov,conv_template=qwen_1_5,model_name=llava_qwen,dycoke=True,dycoke_l=3,dycoke_p=0.7,dycoke_k=0.7 \
+export WRAPPER=OmniZip
+OMNIZIP_RHO_AUDIO=0.3
+OMNIZIP_RHO_VIDEO=0.6
+OMNIZIP_G=3
+OMNIZIP_CONTEXTUAL_RATIO=0.05
 ...
 ```
-- Our main baseline model is [LLaVA-OV](https://github.com/LLaVA-VL/LLaVA-NeXT/tree/main), if you want to switch between different model frameworks, please change the following parameters:
-```bash
-...
---model_args pretrained=lmms-lab/llava-onevision-qwen2-0.5b-ov,conv_template=qwen_1_5,model_name=llava_qwen,dycoke=True,dycoke_num_image_per_frame=$YOUR_NUM,image_token_start_index=$YOUR_IDX \
-...
-```
-##### 1. Test on the specified task：
-```bash
-accelerate launch --num_processes=8 \
--m lmms_eval \
---model llava_onevision \
---model_args pretrained=lmms-lab/llava-onevision-qwen2-7b-ov,conv_template=qwen_1_5,model_name=llava_qwen,dycoke=True \
---tasks $YOUR-TASKS \  # Such as "activitynetqa,video_dc499,perceptiontest_val_mc,videomme_w_subtitle,videomme,nextqa_mc_test..."
---batch_size 1 \
---log_samples \
---log_samples_suffix llava_onevision \
---output_path ./logs/
-```
-##### 2. **Reproduce the results**：
+- Then you can run for evaluation
 ```bash
 bash eval.sh
 ```
-##### 3. **Test on the LLaVA-OV-72B**：
-```bash
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7,8 accelerate launch --num_processes=1 \
--m lmms_eval \
---model llava_onevision \
---model_args pretrained=lmms-lab/llava-onevision-qwen2-7b-ov,conv_template=qwen_1_5,model_name=llava_qwen,dycoke=True,device_map=auto \
---tasks $YOUR-TASKS \  # Such as "activitynetqa,video_dc499,perceptiontest_val_mc,videomme_w_subtitle,videomme,nextqa_mc_test..."
---batch_size 1 \
---log_samples \
---log_samples_suffix llava_onevision \
---output_path ./logs/
-```
+#### For Other Benchmark (WorldSense, AVUT, ShorVid-Bench)
+
+- We will sort out the code as soon as possible.
+
 
 ## 👀 Results on Audio-Video Understanding Task
 
