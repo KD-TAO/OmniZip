@@ -3,7 +3,7 @@
 
 [Keda Tao](https://kd-tao.github.io/), [Kele Shao](https://cokeshao.github.io/), [Bohan Yu](), [Weiqiang Wang](), [Jian liu](), [Huan Wang](https://huanwang.tech/), "OmniZip: Audio-Guided Dynamic Token Compression for Fast Omnimodal Large Language Models"
 
-[[Paper]()]
+[[Paper](https://arxiv.org/abs/2511.14582)]
 
 - **2025-11-18:** This repo is released.
 
@@ -16,8 +16,8 @@
 ## ⚒️ TODO
 
 * [x] Release code 
-* [ ] Release paper 
-* [ ] Release evaluation script for all benchmark
+* [x] Release paper 
+* [ ] Release evaluation script for all benchmarks
 * [ ] Support more models
 
 ## Install
@@ -92,12 +92,17 @@ This project is based on [Qwen2.5-Omni](https://github.com/QwenLM/Qwen2.5-Omni).
 
 ## Contact
 
-If you have any questions, please feel free to contact with me at KD.TAO@outlook.com
+If you have any questions, please feel free to contact me at KD.TAO@outlook.com
 
 ## Citation
 
 If you find this work useful for your research, please consider citing our paper:
 
 ```bibtex
-coming soon
+@article{omnizip,
+  title={OmniZip: Audio-Guided Dynamic Token Compression for Fast Omnimodal Large Language Models}, 
+  author={Keda Tao and Kele Shao and Bohan Yu and Weiqiang Wang and Jian liu and Huan Wang},
+  journal={arXiv preprint arXiv:2511.14582},
+  year={2025}
+}
 ```
