@@ -5,6 +5,9 @@
 
 [[Paper](https://arxiv.org/abs/2511.14582)]
 
+#### 🔥🔥🔥 News
+
+- **2025-11-19**: The paper is released.
 - **2025-11-18:** This repo is released.
 
 
