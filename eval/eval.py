@@ -94,12 +94,12 @@ for vid, v in qa_data.items():
         if key.startswith("task"):
             task_obj = v[key]
             sample = {
-                "video": v["video_id"] + ".mp4",  # videos are in .mp4 files
+                "video": v["video_id"] + ".mp4",
                 "video_id": v["video_id"],
                 "video_caption": v.get("video_caption", ""),
                 "problem_type": task_obj.get("task_type", key),
                 "data_type": task_obj.get("task_domain", ""),
-                "domain": v.get("domain", ""),  # <--- 新增domain字段
+                "domain": v.get("domain", ""),
                 "question": task_obj["question"],
                 "answer": task_obj["answer"],
                 "candidates": task_obj["candidates"]
@@ -148,7 +148,7 @@ def evaluate_sample(sample: Dict) -> Dict:
     ]
     
     try:
-        # Preparation for inference
+
         USE_AUDIO_IN_VIDEO = _check_if_video_has_audio(video_path)
         text = processor.apply_chat_template(conversation, add_generation_prompt=True, tokenize=False)
         audios, images, videos = process_mm_info(conversation, use_audio_in_video=USE_AUDIO_IN_VIDEO)
@@ -286,7 +286,7 @@ metrics_file = os.path.join(OUTPUT_DIR, "accuracy_metrics.json")
 with open(metrics_file, 'w', encoding='utf-8') as f:
     json.dump(accuracy_metrics, f, indent=2, ensure_ascii=False)
 
-# Log final results
+
 logger.info("=" * 50)
 logger.info("EVALUATION COMPLETED")
 logger.info("=" * 50)
