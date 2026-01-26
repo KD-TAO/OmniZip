@@ -65,7 +65,7 @@ You can set the relevant parameters by
 python demo.py --omnizip --rho_audio 0.4 --rho_video 0.7
 ```
 ## Evaluation
-#### For VideoMME and [WorldSense](https://jaaackhongggg.github.io/WorldSense/) (Benchmarks in lmms-eval)
+#### For VideoMME (Benchmarks in lmms-eval)
 - We use the [lmms-eval](https://github.com/EvolvingLMMs-Lab/lmms-eval) toolkit to evaluate our models. It's worth noting that you can specify OmniZip Settings via parameters in **eval.sh**, such as:
 ```bash
 export WRAPPER=OmniZip
@@ -79,9 +79,12 @@ OMNIZIP_CONTEXTUAL_RATIO=0.05
 ```bash
 bash eval.sh
 ```
-#### For Other Benchmark ([AVUT](https://huggingface.co/datasets/tsinghua-ee/AVUTBenchmark), [ShorVid-Bench](https://huggingface.co/datasets/TencentARC/ShortVid-Bench))
+#### For Other Benchmark ([AVUT](https://huggingface.co/datasets/tsinghua-ee/AVUTBenchmark), [ShorVid-Bench](https://huggingface.co/datasets/TencentARC/ShortVid-Bench)), and [WorldSense](https://jaaackhongggg.github.io/WorldSense/)
 
-- We will sort out the code as soon as possible.
+- We prefer use this evaluation method:
+```
+python eval/eval.py --WAPPER-METHOD omnizip
+```
 
 
 ## 👀 Results on Audio-Video Understanding Task
