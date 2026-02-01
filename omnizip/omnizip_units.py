@@ -68,8 +68,12 @@ def omnizip_audio_attn(
 
     return keep_mask, merge_plan
 
-def omnizip_istm(video_feature, num_tokens_per_frame=196, merging_ratio=0.7):
+def omnizip_istm(video_feature, num_tokens_per_frame=196, merging_ratio=[0.7, 0.7]):
+
     num_frames = video_feature.shape[0] // num_tokens_per_frame
+    # assert num_frames == 4
+    # assert isinstance(merging_ratio, (list, tuple)) and len(merging_ratio) == 2
+
     mask = torch.zeros(video_feature.shape[0], dtype=torch.bool, device=video_feature.device)
 
     def dpcknn(tokens, keep_rate=0.5, k=5):
@@ -86,9 +90,10 @@ def omnizip_istm(video_feature, num_tokens_per_frame=196, merging_ratio=0.7):
             selected = torch.topk(-knn_dist, num_keep, largest=True).indices
         return selected
 
-    keep_ratio = 1 - merging_ratio
-
     for t in range(num_frames):
+        ratio_id = 0 if t < 2 else 1
+        keep_ratio = 1.0 - merging_ratio[ratio_id]
+
         start_idx = t * num_tokens_per_frame
         end_idx = (t + 1) * num_tokens_per_frame
         tokens = video_feature[start_idx:end_idx]
@@ -241,20 +246,30 @@ def omnizip(
         video_merging_ratios = adjusted_vs
 
         video_group_masks = []
-        for i, video_merging_ratio in zip(range(group_count), video_merging_ratios):
-            v_start = i * num_video_tokens_per_group
-            v_end = (i + 1) * num_video_tokens_per_group if i < group_count - 1 else video_feature.shape[0]
-            group_feat = video_feature[v_start:v_end]
-            group_len = group_feat.size(0)
+        for i in range(0, group_count, 2):
+            if i + 2 <= group_count:  
+                video_merging_ratio = video_merging_ratios[i:i+2]
+                v_start = i * num_video_tokens_per_group
+                v_end = (i + 2) * num_video_tokens_per_group if i < group_count - 1 else video_feature.shape[0]
+                group_feat = video_feature[v_start:v_end]
+                group_len = group_feat.size(0)
+                if group_len % 4 == 0:
+                    group_mask = omnizip_istm(
+                        group_feat, num_tokens_per_frame=video_token_per_frame * 2, merging_ratio=video_merging_ratio
+                    )
+                else:
+                    group_mask = torch.ones(group_len, dtype=torch.bool, device=group_feat.device)
 
-            if group_len % 4 == 0:
-                group_mask = omnizip_istm(
-                    group_feat, num_tokens_per_frame=video_token_per_frame, merging_ratio=video_merging_ratio
-                )
+                video_group_masks.append(group_mask)
             else:
+                video_merging_ratio = video_merging_ratios[i:i+2]
+                v_start = i * num_video_tokens_per_group
+                v_end = (i + 2) * num_video_tokens_per_group if i < group_count - 1 else video_feature.shape[0]
+                group_feat = video_feature[v_start:v_end]
+                group_len = group_feat.size(0)
                 group_mask = torch.ones(group_len, dtype=torch.bool, device=group_feat.device)
 
-            video_group_masks.append(group_mask)
+                video_group_masks.append(group_mask)
 
         video_mask = torch.cat(video_group_masks, dim=0)
         global_mask = torch.ones(flat_embeds.size(0), dtype=torch.bool, device=device)
@@ -357,21 +372,31 @@ def omnizip(
     video_merging_ratios = adjusted_vs
 
     video_group_masks = []
-    for idx, ((v_start, v_end), (a_start, a_end), video_merging_ratio) in enumerate(
-        zip(video_groups, audio_groups, video_merging_ratios)
-    ):
-        group_feat = video_feature[v_start:v_end]
+    group_count = len(video_groups) // 2 
+    idx = 0
+    while idx < len(video_groups):
+        if idx + 1 < len(video_groups):
+            v_start_0, v_end_0 = video_groups[idx]
+            v_start_1, v_end_1 = video_groups[idx + 1]
+            group_feat = video_feature[v_start_0:v_end_1]
+            video_merging_ratio = [video_merging_ratios[idx], video_merging_ratios[idx + 1]]
+        else:
+            v_start_0, v_end_0 = video_groups[idx]
+            group_feat = video_feature[v_start_0:v_end_0]
+            video_merging_ratio = [video_merging_ratios[idx]]
+        
         group_len = group_feat.size(0)
-        is_tail_video_group = (group_len != VIDEO_GROUP_SIZE)
+        is_tail_video_group = (group_len != 2 * VIDEO_GROUP_SIZE) if (idx+1 < len(video_groups)) else (group_len != VIDEO_GROUP_SIZE)
         if group_len == 0:
             group_mask = torch.zeros(0, dtype=torch.bool, device=video_feature.device)
         elif is_tail_video_group:
             group_mask = torch.ones(group_len, dtype=torch.bool, device=video_feature.device)
         else:
             group_mask = omnizip_istm(
-                group_feat, num_tokens_per_frame=video_token_per_frame, merging_ratio=video_merging_ratio
+                group_feat, num_tokens_per_frame=video_token_per_frame * 2, merging_ratio=video_merging_ratio
             )
         video_group_masks.append(group_mask)
+        idx += 2
 
     video_mask = torch.cat(video_group_masks, dim=0)
     global_mask = torch.ones(flat_embeds.size(0), dtype=torch.bool, device=device)
