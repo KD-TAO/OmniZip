@@ -687,19 +687,24 @@ class Qwen2_5OmniAudioFlashAttention2(Qwen2_5OmniAudioAttention):
 
         if return_logits:
             with torch.no_grad():
-                q = query_states.permute(1, 0, 2)  # [H, T, D]
-                k = key_states.permute(1, 0, 2)  # [H, T, D]
-                
-                attn_logits = torch.matmul(q, k.transpose(-1, -2))
-
-                attn_logits = attn_logits / (q.shape[-1] ** 0.5)  
-                attn_logits = F.softmax(attn_logits, dim=-1)  
-                #print("Attn Logits Shape: ", attn_logits.shape)
+                q = query_states.permute(1, 0, 2)
+                k = key_states.permute(1, 0, 2)
+                scale = q.shape[-1] ** -0.5
+                T_len = q.shape[1]
+                token_importance = torch.zeros(T_len, device=q.device)
+                chunk_size = 1024
+                for i in range(0, T_len, chunk_size):
+                    q_chunk = q[:, i:i + chunk_size, :]
+                    attn_chunk = torch.matmul(q_chunk, k.transpose(-1, -2)) * scale
+                    attn_chunk = F.softmax(attn_chunk, dim=-1)
+                    token_importance += attn_chunk.sum(dim=(0, 1))
+                attn_logits = token_importance / (q.shape[0] * T_len)
                 return_k = k
         else:
             attn_logits = None
             return_k = None     
         torch.cuda.empty_cache()
+        
         return attn_output, attn_logits, return_k
 
 
@@ -979,12 +984,13 @@ class Qwen2_5OmniAudioEncoder(Qwen2_5OmniPreTrainedModel):
         
         with torch.no_grad():
             if logits is not None:
-                attn_mean = logits.mean(dim=0).sum(dim=0)
-                T = attn_mean.shape[0]
-                if T % 2 == 1:
+                attn_mean = logits 
+                
+                T_len = attn_mean.shape[0]
+                if T_len % 2 == 1:
                     attn_mean = attn_mean[:-1]
-                    T -= 1
-                if T >= 2:
+                    T_len -= 1
+                if T_len >= 2:
                     attn_mean = attn_mean.view(-1, 2).mean(dim=-1)
 
                 H, Tk, D = attn_key.shape
@@ -993,11 +999,11 @@ class Qwen2_5OmniAudioEncoder(Qwen2_5OmniPreTrainedModel):
                     Tk -= 1
                 if Tk >= 2:
                     attn_key = attn_key.view(H, -1, 2, D).mean(dim=2)
+                
                 attn_key = attn_key.mean(dim=0, keepdim=True)
             else:
                 attn_mean = None
                 attn_key = None
-
 
         return BaseModelOutput(last_hidden_state=token_audio), attn_mean, attn_key
 
