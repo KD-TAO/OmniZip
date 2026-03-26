@@ -685,26 +685,34 @@ class Qwen2_5OmniAudioFlashAttention2(Qwen2_5OmniAudioAttention):
         attn_output = attn_output.reshape(seq_length, all_dim)
         attn_output = self.out_proj(attn_output)
 
+        import time
+        import torch
+
         if return_logits:
+
             with torch.no_grad():
                 q = query_states.permute(1, 0, 2)
                 k = key_states.permute(1, 0, 2)
                 scale = q.shape[-1] ** -0.5
+                num_heads = q.shape[0]
                 T_len = q.shape[1]
                 token_importance = torch.zeros(T_len, device=q.device)
-                chunk_size = 1024
-                for i in range(0, T_len, chunk_size):
-                    q_chunk = q[:, i:i + chunk_size, :]
-                    attn_chunk = torch.matmul(q_chunk, k.transpose(-1, -2)) * scale
-                    attn_chunk = F.softmax(attn_chunk, dim=-1)
-                    token_importance += attn_chunk.sum(dim=(0, 1))
-                attn_logits = token_importance / (q.shape[0] * T_len)
+                head_chunk = 4
+                seq_chunk = 512
+                for h in range(0, num_heads, head_chunk):
+                    q_h = q[h:h + head_chunk]
+                    k_h = k[h:h + head_chunk]
+                    for i in range(0, T_len, seq_chunk):
+                        attn_chunk = torch.matmul(q_h[:, i:i + seq_chunk, :], k_h.transpose(-1, -2)) * scale
+                        attn_chunk = F.softmax(attn_chunk, dim=-1)
+                        token_importance += attn_chunk.sum(dim=(0, 1))
+                        del attn_chunk
+                attn_logits = token_importance / (num_heads * T_len)
                 return_k = k
         else:
             attn_logits = None
-            return_k = None     
+            return_k = None
         torch.cuda.empty_cache()
-        
         return attn_output, attn_logits, return_k
 
 
@@ -755,16 +763,25 @@ class Qwen2_5OmniAudioSdpaAttention(Qwen2_5OmniAudioAttention):
             with torch.no_grad():
                 q = query_states.permute(1, 0, 2)  # [H, T, D]
                 k = key_states.permute(1, 0, 2)  # [H, T, D]
-                
-                attn_logits = torch.matmul(q, k.transpose(-1, -2))
-
-                attn_logits = attn_logits / (q.shape[-1] ** 0.5)  
-                attn_logits = F.softmax(attn_logits, dim=-1)  
-                #print("Attn Logits Shape: ", attn_logits.shape)
+                scale = q.shape[-1] ** -0.5
+                num_heads = q.shape[0]
+                T_len = q.shape[1]
+                token_importance = torch.zeros(T_len, device=q.device)
+                head_chunk = 4
+                seq_chunk = 512
+                for h in range(0, num_heads, head_chunk):
+                    q_h = q[h:h + head_chunk]
+                    k_h = k[h:h + head_chunk]
+                    for i in range(0, T_len, seq_chunk):
+                        attn_chunk = torch.matmul(q_h[:, i:i + seq_chunk, :], k_h.transpose(-1, -2)) * scale
+                        attn_chunk = F.softmax(attn_chunk, dim=-1)
+                        token_importance += attn_chunk.sum(dim=(0, 1))
+                        del attn_chunk
+                attn_logits = token_importance / (num_heads * T_len)
                 return_k = k
         else:
             attn_logits = None
-            return_k = None     
+            return_k = None
         torch.cuda.empty_cache()
         return attn_output, attn_logits, return_k
 
@@ -1004,6 +1021,7 @@ class Qwen2_5OmniAudioEncoder(Qwen2_5OmniPreTrainedModel):
             else:
                 attn_mean = None
                 attn_key = None
+
 
         return BaseModelOutput(last_hidden_state=token_audio), attn_mean, attn_key
 
@@ -2549,13 +2567,11 @@ class Qwen2_5OmniThinkerForConditionalGeneration(Qwen2_5OmniPreTrainedModelForCo
                 position_ids = position_ids.add(delta)
                 position_ids = position_ids.unsqueeze(0).expand(3, -1, -1)
 
-        # OmniZip Inference
         if pixel_values_videos is not None and audio_features is not None and attn_logits is not None:
-            from omnizip.omnizip_units import omnizip
+            from omnizip.omnizip_core import omnizip
             if self.omnizip_config is not None:
                 omnizip_config = self.omnizip_config
             else:
-                print("Using default omnizip config")
                 omnizip_config = {
                     "rho_audio": 0.3,
                     "rho_video": 0.6,
@@ -2564,12 +2580,13 @@ class Qwen2_5OmniThinkerForConditionalGeneration(Qwen2_5OmniPreTrainedModelForCo
                 }
 
             inputs_embeds, global_mask = omnizip(
-                inputs_embeds,
-                attn_logits,
-                input_ids,
-                self.config.audio_token_id,
-                self.config.video_token_id,
-                num_input_frames=self.nframes,
+                input_embeds=inputs_embeds,
+                attn_logits=attn_logits,
+                input_ids=input_ids,
+                audio_token_id=self.config.audio_token_id,
+                video_token_id=self.config.video_token_id,
+                video_grid_thw=video_grid_thw,
+                audio_tokens_per_sec=25,
                 merging_ratio_audio=omnizip_config["rho_audio"],
                 merging_ratio_v=omnizip_config["rho_video"],
                 contextual_ratio=omnizip_config["contextual_ratio"],
