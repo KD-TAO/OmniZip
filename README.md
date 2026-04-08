@@ -21,7 +21,7 @@
 
 * [x] Release code 
 * [x] Release paper 
-* [ ] Release evaluation script for all benchmarks
+* [x] Release evaluation script for all benchmarks
 * [ ] Support more models
 
 ## Install
@@ -84,7 +84,7 @@ bash eval.sh
 
 - We prefer use this evaluation method:
 ```
-python eval/eval.py --WAPPER-METHOD omnizip
+python eval/eval_worldsense.py --WAPPER-METHOD omnizip
 ```
 
 
