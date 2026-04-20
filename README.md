@@ -7,6 +7,7 @@
 
 #### 🔥🔥🔥 News
 
+- **2025-04-20**: We provide the adaptation of OmniZip with Qwen3-Omni-30B.
 - **2026-03-01**: **OmniZip has been accepted by CVPR 2026!**
 - **2025-11-19**: The paper is released.
 - **2025-11-18:** This repo is released.
@@ -22,10 +23,22 @@
 * [x] Release code 
 * [x] Release paper 
 * [x] Release evaluation script for all benchmarks
-* [ ] Support more models
+* [x] Support more models
+
+## 🌟 OmniZip with Qwen3-Omni
+```bash
+git clone https://github.com/KD-TAO/OmniZip.git
+cd OmniZip
+
+# Install the inference package -> omnizip/qwen3_omni/requirements.txt
+# Core -> omnizip/qwen3_omni/modeling_qwen3_omni_moe.py
+
+# Demo
+python demo_3_omni.py --omnizip
+```
 
 ## Install
-##### 1. **Clone this repository and navigate to the LLaVA folder:**
+##### 1. **Clone this repository and navigate to the folder:**
 ```bash
 git clone https://github.com/KD-TAO/OmniZip.git
 cd OmniZip
