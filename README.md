@@ -7,7 +7,7 @@
 
 #### 🔥🔥🔥 News
 
-- **2025-04-20**: We provide the adaptation of OmniZip with Qwen3-Omni-30B.
+- **2026-04-20**: We provide the adaptation of OmniZip with Qwen3-Omni-30B.
 - **2026-03-01**: **OmniZip has been accepted by CVPR 2026!**
 - **2025-11-19**: The paper is released.
 - **2025-11-18:** This repo is released.
